@@ -23,6 +23,11 @@ namespace AmongUsCapture
             return this.IsDead > 0;
         }
 
+        public bool GetIsImposter()
+        {
+            return this.IsImpostor > 0;
+        }
+
         public string GetPlayerName()
         {
             return ProcessMemory.getInstance().ReadString((IntPtr)this.PlayerName);

@@ -25,6 +25,7 @@ namespace AmongUsCapture
             // Register handlers for game-state change events.
             GameMemReader.getInstance().GameStateChanged += GameStateChangedHandler;
             GameMemReader.getInstance().PlayerChanged += PlayerChangedHandler;
+            GameMemReader.getInstance().DisplayImposter += DisplayImposterHandler;
             GameMemReader.getInstance().JoinedLobby += JoinedLobbyHandler;
 
             // Handle socket connection events.
@@ -107,6 +108,13 @@ namespace AmongUsCapture
             socket.EmitAsync("state",
                 JsonSerializer
                     .Serialize(e.NewState)); // could possibly use continueWith() w/ callback if result is needed
+        }
+
+        private void DisplayImposterHandler(object sender, DisplayImpostersEventArgs e)
+        {
+            if (!socket.Connected) return;
+            Settings.conInterface.WriteModuleTextColored("Imposter", Color.Red,
+                $"{Color.Red.ToTextColor()}{e.isImposter}{Settings.conInterface.getNormalColor().ToTextColor()}");
         }
 
         private void PlayerChangedHandler(object sender, PlayerChangedEventArgs e)

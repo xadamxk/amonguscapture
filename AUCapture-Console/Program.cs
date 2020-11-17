@@ -75,7 +75,10 @@ namespace AUCapture_Console
         private static void UserForm_PlayerChanged(object? sender, PlayerChangedEventArgs e)
         {
             Settings.conInterface.WriteModuleTextColored("PlayerChange", Color.DarkKhaki, $"{e.Name}: {e.Action}");
-
+            if (e.isImposter)
+            {
+                Settings.conInterface.WriteModuleTextColored("Imposter", Color.Red, $"{e.Name}");
+            }
         }
 
         private static void GameStateChangedHandler(object? sender, GameStateChangedEventArgs e)

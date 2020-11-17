@@ -42,6 +42,7 @@ namespace AmongUsCapture
         private bool shouldForceTransmitState;
         private bool shouldForceUpdatePlayers;
         private bool shouldTransmitLobby;
+        private bool shouldDisplayImposters;
 
         public static GameMemReader getInstance()
         {
@@ -52,6 +53,8 @@ namespace AmongUsCapture
         public event EventHandler<GameStateChangedEventArgs> GameStateChanged;
 
         public event EventHandler<PlayerChangedEventArgs> PlayerChanged;
+
+        public event EventHandler<DisplayImpostersEventArgs> DisplayImposter;
 
         public event EventHandler<ChatMessageEventArgs> ChatMessageAdded;
 
@@ -147,6 +150,7 @@ namespace AmongUsCapture
                 var gameState =
                     ProcessMemory.getInstance().Read<int>(GameAssemblyPtr, _gameOffsets.AmongUsClientOffset, 0x5C, 0,
                         0x64); // 0 = NotJoined, 1 = Joined, 2 = Started, 3 = Ended (during "defeat" or "victory" screen only)
+                shouldDisplayImposters = true;
 
                 switch (gameState)
                 {
@@ -176,6 +180,7 @@ namespace AmongUsCapture
                 var allPlayersPtr =
                     ProcessMemory.getInstance().Read<IntPtr>(GameAssemblyPtr, _gameOffsets.GameDataOffset, 0x5C, 0, 0x24);
                 var allPlayers = ProcessMemory.getInstance().Read<IntPtr>(allPlayersPtr, 0x08);
+                
                 var playerCount = ProcessMemory.getInstance().Read<int>(allPlayersPtr, 0x0C);
 
                 var playerAddrPtr = allPlayers + 0x10;
@@ -190,6 +195,7 @@ namespace AmongUsCapture
                     for (var i = 0; i < playerCount; i++)
                     {
                         var pi = ProcessMemory.getInstance().Read<PlayerInfo>(playerAddrPtr, 0, 0);
+
                         playerAddrPtr += 4;
 
                         if (pi.PlayerId == exiledPlayerId)
@@ -198,6 +204,7 @@ namespace AmongUsCapture
                                 Action = PlayerAction.Exiled,
                                 Name = pi.GetPlayerName(),
                                 IsDead = pi.GetIsDead(),
+                                isImposter = pi.GetIsImposter(),
                                 Disconnected = pi.GetIsDisconnected(),
                                 Color = pi.GetPlayerColor()
                             });
@@ -244,6 +251,18 @@ namespace AmongUsCapture
                     var playerName = pi.GetPlayerName();
                     if (playerName.Length == 0) continue;
 
+                    // TODO: Add condition so imposters are only displayed once
+                    if (shouldDisplayImposters)
+                    {
+                        DisplayImposter?.Invoke(this, new DisplayImpostersEventArgs
+                        {
+                                Name = playerName,
+                                IsDead = pi.GetIsDead(),
+                                isImposter = pi.GetIsImposter(),
+                                Color = pi.GetPlayerColor()
+                            });
+                    }
+
                     newPlayerInfos[playerName] = pi; // add to new playerinfos for comparison later
 
                     if (!oldPlayerInfos.ContainsKey(playerName)) // player wasn't here before, they just joined
@@ -253,6 +272,7 @@ namespace AmongUsCapture
                             Action = PlayerAction.Joined,
                             Name = playerName,
                             IsDead = pi.GetIsDead(),
+                            isImposter = pi.GetIsImposter(),
                             Disconnected = pi.GetIsDisconnected(),
                             Color = pi.GetPlayerColor()
                         });
@@ -267,6 +287,7 @@ namespace AmongUsCapture
                                 Action = PlayerAction.Died,
                                 Name = playerName,
                                 IsDead = pi.GetIsDead(),
+                                isImposter = pi.GetIsImposter(),
                                 Disconnected = pi.GetIsDisconnected(),
                                 Color = pi.GetPlayerColor()
                             });
@@ -277,6 +298,7 @@ namespace AmongUsCapture
                                 Action = PlayerAction.ChangedColor,
                                 Name = playerName,
                                 IsDead = pi.GetIsDead(),
+                                isImposter = pi.GetIsImposter(),
                                 Disconnected = pi.GetIsDisconnected(),
                                 Color = pi.GetPlayerColor()
                             });
@@ -287,11 +309,13 @@ namespace AmongUsCapture
                                 Action = PlayerAction.Disconnected,
                                 Name = playerName,
                                 IsDead = pi.GetIsDead(),
+                                isImposter = pi.GetIsImposter(),
                                 Disconnected = pi.GetIsDisconnected(),
                                 Color = pi.GetPlayerColor()
                             });
                     }
                 }
+                shouldDisplayImposters = false;
 
                 foreach (var kvp in oldPlayerInfos)
                 {
@@ -303,6 +327,7 @@ namespace AmongUsCapture
                             Action = PlayerAction.Left,
                             Name = playerName,
                             IsDead = pi.GetIsDead(),
+                            isImposter = pi.GetIsImposter(),
                             Disconnected = pi.GetIsDisconnected(),
                             Color = pi.GetPlayerColor()
                         });
@@ -328,6 +353,7 @@ namespace AmongUsCapture
                             Action = PlayerAction.ForceUpdated,
                             Name = kvp.Key,
                             IsDead = pi.GetIsDead(),
+                            isImposter = pi.GetIsImposter(),
                             Disconnected = pi.GetIsDisconnected(),
                             Color = pi.GetPlayerColor()
                         });
@@ -475,7 +501,16 @@ namespace AmongUsCapture
         public PlayerAction Action { get; set; }
         public string Name { get; set; }
         public bool IsDead { get; set; }
+        public bool isImposter { get; set; }
         public bool Disconnected { get; set; }
+        public PlayerColor Color { get; set; }
+    }
+
+    public class DisplayImpostersEventArgs : EventArgs
+    {
+        public string Name { get; set; }
+        public bool IsDead { get; set; }
+        public bool isImposter { get; set; }
         public PlayerColor Color { get; set; }
     }
 

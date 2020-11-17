@@ -47,6 +47,7 @@ namespace AUCapture_WPF
 
             GameMemReader.getInstance().GameStateChanged += GameStateChangedHandler;
             GameMemReader.getInstance().PlayerChanged += UserForm_PlayerChanged;
+            GameMemReader.getInstance().DisplayImposter += UserForm_DisplayImposter;
             GameMemReader.getInstance().ChatMessageAdded += OnChatMessageAdded;
             GameMemReader.getInstance().JoinedLobby += OnJoinedLobby;
             IPCAdapter.getInstance().OnToken += (sender, token) => {
@@ -78,6 +79,15 @@ namespace AUCapture_WPF
             AmongUsCapture.Settings.conInterface.WriteModuleTextColored("PlayerChange", Color.DarkKhaki,
                 $"{PlayerColorToColorOBJ(e.Color).ToTextColor()}{e.Name}{NormalTextColor.ToTextColor()}: {e.Action}");
             //Program.conInterface.WriteModuleTextColored("GameMemReader", Color.Green, e.Name + ": " + e.Action);
+        }
+
+        private void UserForm_DisplayImposter(object sender, DisplayImpostersEventArgs e)
+        {
+            if (e.isImposter)
+            {
+                AmongUsCapture.Settings.conInterface.WriteModuleTextColored("Imposter", Color.Red,
+                    $"{PlayerColorToColorOBJ(e.Color).ToTextColor()}{e.Name}{NormalTextColor.ToTextColor()}");
+            }
         }
 
         private void OnChatMessageAdded(object sender, ChatMessageEventArgs e)
